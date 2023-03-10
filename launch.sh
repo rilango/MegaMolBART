@@ -152,10 +152,6 @@ fi
 
 DOCKER_CMD="docker run \
     --network host \
-    -v /etc/passwd:/etc/passwd:ro \
-    -v /etc/group:/etc/group:ro \
-    -v /etc/shadow:/etc/shadow:ro \
-    -u $(id -u):$(id -u) \
     ${PARAM_RUNTIME} \
     -p ${JUPYTER_PORT}:8888 \
     -v ${PROJECT_PATH}:${PROJECT_MOUNT_PATH} \
@@ -306,6 +302,7 @@ setup() {
 
 dev() {
     CMD='bash'
+    local root_access=0
     while [[ $# -gt 0 ]]; do
         case $1 in
             -a|--additional-args)
@@ -332,6 +329,10 @@ dev() {
                 CMD="$@"
                 break
                 ;;
+            -r|--root)
+                shift
+                root_access=1
+                ;;
             *)
                 echo "Unknown option '$1'.
 Available options are -a(--additional-args), -i(--image), -d(--demon) and -c(--cmd)"
@@ -339,6 +340,14 @@ Available options are -a(--additional-args), -i(--image), -d(--demon) and -c(--c
                 ;;
         esac
     done
+
+    if [ $root_access -eq 0 ]; then
+        DOCKER_CMD="${DOCKER_CMD} \
+            -v /etc/passwd:/etc/passwd:ro \
+            -v /etc/group:/etc/group:ro \
+            -v /etc/shadow:/etc/shadow:ro \
+            -u $(id -u):$(id -u)"
+    fi
 
     setup
     set -x
